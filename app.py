@@ -2,13 +2,9 @@
 from __future__ import unicode_literals
 import subprocess
 import os
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
-subprocess.run(["playwright", "install"])
-subprocess.run(["playwright", "install-deps"])
-subprocess.run(["playwright", "install", "chromium"])
-
-load_dotenv()
+#load_dotenv()
 
 os.environ['USER_AGENT'] = 'myagent'
 
@@ -55,18 +51,16 @@ def download_file(files_url, task_id):
         filename = task_id
         response = requests.get(files_url+'/'+filename)
         response.raise_for_status()
-        #print(f"Downloaded file for task {task_id}")
 
         filename = response.headers['content-disposition'].split('"')[1]
         temp_dir = tempfile.gettempdir()
         file_path = os.path.join(temp_dir, filename)
         with open(file_path, 'wb') as f:
             f.write(response.content)
-        #print(file_path)
 
         return file_path
     except Exception as file_e:
-        #print(f"No file found for task {task_id} or error: {file_e}")
+        print(f"No file found for task {task_id} or error: {file_e}")
         return None
 
 async def run_my_agent(agent, questions_data, files_url):
@@ -95,8 +89,6 @@ async def run_and_submit_all( profile: gr.OAuthProfile | None):
     and displays the results.
     """
     # --- Determine HF Space Runtime URL and Repo URL ---
-    #space_id = os.getenv("SPACE_ID") # Get the SPACE_ID for sending link to the code
-
     if profile:
         username= f"{profile.username}"
         print(f"User logged in: {username}")
@@ -125,7 +117,7 @@ async def run_and_submit_all( profile: gr.OAuthProfile | None):
 
     # 3. Run your Agent
     results_log, answers_payload = await run_my_agent(agent, questions_data, files_url)
-    #results_log, answers_payload = run_my_agent(questions_data, api_url)
+    
     if not answers_payload:
         print("Agent did not produce any answers to submit.")
         return "Agent did not produce any answers to submit.", pd.DataFrame(results_log)
@@ -230,4 +222,4 @@ if __name__ == "__main__":
     print("-"*(60 + len(" App Starting ")) + "\n")
 
     print("Launching Gradio Interface for Basic Agent Evaluation...")
-    demo.launch(debug=True, share=True)
+    demo.launch(debug=True, share=False)

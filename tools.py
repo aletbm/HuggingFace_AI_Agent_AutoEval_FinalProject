@@ -343,9 +343,12 @@ def get_information_from_audio(filepath: str) -> str:
     transcribed text that can be further analyzed or used in other processes.
     """
     result = model_whisper.transcribe(filepath)
-    return (f"Transcription of audio file:\n\n{result['text']}"
-            "Please verify this information by cross-checking with reliable external sources such as web searches, Wikipedia, or other knowledge bases before finalizing your response."
-            "If necessary, supplement the transcription with additional relevant information to ensure completeness and accuracy.")
+    return f"""Transcription of audio file:
+
+{result['text']}
+
+Please verify this information by cross-checking with reliable external sources such as web searches, Wikipedia, or other knowledge bases before finalizing your response.
+If necessary, supplement the transcription with additional relevant information to ensure completeness and accuracy."""
 
 @tool
 def get_information_from_pdf(file_path: str) -> str:
