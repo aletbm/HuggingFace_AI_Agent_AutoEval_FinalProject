@@ -17,6 +17,7 @@ import requests
 import inspect
 import tempfile
 import nest_asyncio
+import pandas as pd
 
 from agent import MyAgent
 from tools import initialize_web_tools
