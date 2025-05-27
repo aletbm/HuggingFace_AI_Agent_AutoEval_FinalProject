@@ -38,8 +38,8 @@ from tools import (search_tool,
 DELAY = 5
 TIME_SLEEP = 60/15 + DELAY
 
-GEMINI_API_KEY_1 = os.getenv("GEMINI_API_KEY_1")
-GEMINI_API_KEY_2 = os.getenv("GEMINI_API_KEY_2")
+GEMINI_API_KEY_1 = os.getenv("GOOGLE_API_KEY_1")
+GEMINI_API_KEY_2 = os.getenv("GOOGLE_API_KEY_2")
 
 chat_model = ChatLiteLLM(model="gemini/gemini-2.0-flash",
                          temperature=0.1,
