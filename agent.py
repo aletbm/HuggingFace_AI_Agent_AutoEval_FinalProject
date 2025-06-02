@@ -8,13 +8,9 @@ from langchain_core.messages import AnyMessage, HumanMessage, AIMessage, SystemM
 from langgraph.graph import START, StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_litellm import ChatLiteLLM
-<<<<<<< HEAD
 import litellm
 from IPython.display import Image, display
 import asyncio
-=======
-from IPython.display import Image, display
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
 from tools import (search_tool,
                     download_tool,
                     get_web_page,
@@ -46,7 +42,6 @@ DELAY = 5
 RPM = 15
 TIME_SLEEP = 60/RPM + DELAY
 
-<<<<<<< HEAD
 GEMINI_API_KEY_1 = os.getenv("GOOGLE_API_KEY_1")
 GEMINI_API_KEY_2 = os.getenv("GOOGLE_API_KEY_2")
 GEMINI_API_KEY_3 = os.getenv("GOOGLE_API_KEY_3")
@@ -60,13 +55,6 @@ chat_model_1 = ChatLiteLLM(model="gemini/gemini-2.0-flash",
 chat_model_2 = ChatLiteLLM(model="gemini/gemini-2.0-flash",
                          temperature=0,
                          api_key=GEMINI_API_KEY_2,
-=======
-GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY_1")
-
-chat_model = ChatLiteLLM(model="gemini/gemini-2.0-flash",
-                         temperature=0.1,
-                         api_key=GEMINI_API_KEY,
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
                          max_retries=10,
                          verbose=True)
 
@@ -82,24 +70,17 @@ class AgentState(TypedDict):
     file_path: Optional[str]
     task_id: Optional[str]
     new_messages: Optional[int]
-<<<<<<< HEAD
     final_answer: Optional[str]
     attempt: Optional[int]
     chat_model: Optional[int]
-=======
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
 
 class MyAgent:
     def __init__(self, web_tools=None):
         print("MyAgent initialized.")
 
-<<<<<<< HEAD
         self.chat_1 = chat_model_1
         self.chat_2 = chat_model_2
         self.chat_3 = chat_model_3
-=======
-        self.chat = chat_model
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
 
         self.tools = [search_tool,
                     download_tool,
@@ -127,14 +108,10 @@ class MyAgent:
                     get_information_from_pptx,
                     get_all_files_from_zip] + web_tools
 
-<<<<<<< HEAD
         self.chat_with_tools_1 = self.chat_1.bind_tools(self.tools, verbose=True)
         self.chat_with_tools_2 = self.chat_2.bind_tools(self.tools, verbose=True)
         self.chat_with_tools_3 = self.chat_3.bind_tools(self.tools, verbose=True)
         self.chats = [self.chat_with_tools_1, self.chat_with_tools_2, self.chat_with_tools_3]
-=======
-        self.chat_with_tools = self.chat.bind_tools(self.tools, verbose=True)
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
 
         self.builder = StateGraph(AgentState)
         self.builder.add_node("assistant", self.assistant)
@@ -153,7 +130,6 @@ class MyAgent:
             }
         )
         self.builder.add_edge("tools", "assistant")
-<<<<<<< HEAD
         self.builder.add_conditional_edges(
             "postprocess",
             self.answer_evaluation,
@@ -162,46 +138,21 @@ class MyAgent:
                 "END": END
             }
         )
-=======
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
 
         self.agent = self.builder.compile()
 
     async def __call__(self, question: str, file_path: str, task_id: str) -> str:
         print("\033[1m\033[93m"+"="*150+"\033[0m")
-<<<<<<< HEAD
         prompt = f"""You are a general AI assistant. You will receive a user question and extracted data from associated files.
 
 Your primary goal is to be extremely careful, methodical, and evidence-based when analyzing the question and producing answers.
 
 Follow this process strictly:
-=======
-        print(f"QUESTION: {question}")
-        print(f"File: {file_path}")
-        prompt = f"""You are a general AI assistant. I will ask you a question and I give you the extracted data from associate files to the user question.
-
-You must follow this process:
-1. Analyze the user question to identify the required output type (e.g., number, string, list) and key concepts.
-2. BEFORE planning or using any tool, determine if the answer can be obtained directly from your own knowledge or reasoning. You can't guest the answer.
-   - If yes, answer directly without using any tools.
-   - If not, proceed with tool-based planning as described below.
-3. If tools are needed, generate a plan that includes:
-   - The approach to solve the question.
-   - Which tools to use and in what order.
-   - How to reformulate the query if needed for web search.
-   - Ensure that search queries do not contain punctuation marks, commas, quotes, or special characters.
-4. Do not execute any tool until the plan is complete.
-5. Follow the plan exactly. If a tool fails (e.g., due to network or no results), pause, replan, and retry with:
-   - A reformulated query (more specific or with synonyms/context).
-   - A fallback tool if available.
-6. Evaluate tool results for relevance. If multiple source links are available, explore each one using `navigate_browser` to gather all relevant information.
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
 
 1. Analyze the user question:
    - Determine the exact required output type (number, string, list, etc).
    - Identify key entities, constraints, and any implicit requirements.
 
-<<<<<<< HEAD
 2. Do NOT rely on common knowledge, heuristics, or general assumptions:
    - For any classification task (e.g., botanical categories), you MUST verify each item explicitly against formal, authoritative sources.
    - Use online searches, databases, or reference tools to confirm the classification.
@@ -258,12 +209,6 @@ You must follow this process:
     - Pay close attention to context: distinguish between a person (e.g., actor) and the role they played (e.g., character).
     - If a question references both a person and their role, ensure the output matches exactly what the question asks for.
     - Do not confuse names of real people with names of characters, places, or concepts unless explicitly intended.
-=======
-YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings.
-If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise.
-If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise.
-If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."""
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
 
 Throughout the process, prioritize precision, completeness, and correct interpretation of the user’s question.
 
@@ -460,7 +405,6 @@ Now, try again, but use a different approach. You may:
 - Search for related concepts,
 - Or use a different reasoning path.
 
-<<<<<<< HEAD
 Be creative and precise. Your goal is to uncover useful information that may have been missed previously.
 
 Original question:
@@ -481,11 +425,3 @@ Original question:
     def draw_graph(self):
         display(Image(self.agent.get_graph().draw_mermaid_png()))
         return
-=======
-        state["messages"][-1].content = content
-        return state
-
-    def draw_graph(self):
-        display(Image(self.agent.get_graph().draw_mermaid_png()))
-        return
->>>>>>> 127698999fca32b581cf08a5393b01a5c6f3dd6d
