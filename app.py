@@ -21,8 +21,6 @@ from tools import initialize_web_tools
 nest_asyncio.apply()
 
 DEFAULT_API_URL = "https://agents-course-unit4-scoring.hf.space"
-space_host_startup = os.getenv("SPACE_HOST")
-space_id_startup = os.getenv("SPACE_ID")
 
 def fetch_questions(questions_url):
     print(f"Fetching questions from: {questions_url}")

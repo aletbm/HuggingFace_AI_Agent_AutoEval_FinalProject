@@ -1,4 +1,3 @@
-
 gradio
 requests
 langgraph
@@ -15,7 +14,6 @@ openai-whisper
 wikipedia
 arxiv
 yt_dlp
-pytesseract
 pyld
 docx2txt
 openpyxl
@@ -26,3 +24,4 @@ qwen-vl-utils[decord]==0.0.8
 python-pptx
 ratelimit
 tenacity
+ipython

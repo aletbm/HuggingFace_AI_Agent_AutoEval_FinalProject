@@ -1,4 +1,3 @@
-
 import os
 import requests
 import tempfile
@@ -6,7 +5,6 @@ from langchain.docstore.document import Document
 from langchain.tools import Tool, StructuredTool, tool
 from typing import Tuple, List
 from langchain_core.messages import AIMessage
-from langchain_community.tools import DuckDuckGoSearchResults, DuckDuckGoSearchRun
 from langchain_experimental.tools.python.tool import PythonREPLTool
 from langchain_community.agent_toolkits.playwright.toolkit import PlayWrightBrowserToolkit
 from langchain_community.tools.playwright.utils import create_async_playwright_browser
@@ -27,6 +25,7 @@ import zipfile
 from ratelimit import limits, sleep_and_retry
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 from duckduckgo_search.exceptions import DuckDuckGoSearchException
+from duckduckgo_search import DDGS
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
 import whisper
@@ -86,15 +85,15 @@ def get_information_from_wikipedia(query: str) -> str:
         str: A formatted explanation with a list of Wikipedia URLs related to the query.
     """
     search_docs = WikipediaLoader(query=query, load_max_docs=10).load()
-    urls = [doc.metadata["source"] for doc in search_docs]
-    url_list = "\n".join(f"- {url}" for url in urls)
+    print(search_docs)
+    content = '\n\n'.join([f"{i}. Title: {doc.metadata['title']}\nSummary: {doc.metadata['summary']}\nSource: {doc.metadata['source']}\n" for i, doc in enumerate(search_docs)])
 
     return f"""Wikipedia search completed for query: "{query}".
 
 You must now browse the following Wikipedia pages to extract detailed information. Use `navigate_browser` to explore each URL:
 
-Relevant Wikipedia URLs:
-{url_list}
+Relevant Wikipedia searches:
+{content}
 
 Instructions:
 - Visit each URL using `navigate_browser`.
@@ -273,10 +272,8 @@ def download_youtube_data(url: str) -> str:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
-        # Guardar descripción
         description = info.get("description", "No description found.")
 
-        # Guardar comentarios
         comments = info.get("comments", [])
         comment_texts = [c["text"] for c in comments if "text" in c]
 
@@ -813,63 +810,61 @@ def get_all_files_from_zip(file_path: str) -> Tuple[List[str], str]:
     prompt = f"The ZIP file contains {len(files)} file(s)."
     return files, prompt
 
-
-duckduckgosearchrun_tool = DuckDuckGoSearchRun()
-duckduckgosearchresults_tool = DuckDuckGoSearchResults(max_results=5, output_format='list')
-
 @retry(
     wait=wait_exponential(multiplier=1, min=15, max=60),
     stop=stop_after_attempt(3),
     retry=retry_if_exception_type(DuckDuckGoSearchException)
 )
 @sleep_and_retry
-@limits(calls=1, period=30)
+@limits(calls=1, period=5)
 def get_dgg_search(query: str, mode: str):
-    if mode == "run":
-        return duckduckgosearchrun_tool.run(query)
-    elif mode == "results":
-        return duckduckgosearchresults_tool.run(query)
+    with DDGS() as ddgs:
+        return ddgs.text(query, max_results=10)
 
 def get_information_from_searches(query: str) -> str:
     """
-    Perform a DuckDuckGo search and return both a textual summary and structured results.
+    Perform a DuckDuckGo search and return a textual summary and structured top results with guidance for the agent.
 
     Args:
         query (str): The search query string.
 
     Returns:
-        str: Combined summary and list of links with navigation instructions.
+        str: Combined summary and list of links with step-by-step instructions.
     """
-    text_summary = get_dgg_search(query, mode="run")
+    #text_summary = get_dgg_search(query, mode="run")
     structured_results = get_dgg_search(query, mode="results")
 
-    formatted_links = "\n".join([
-        f"- [{res['title']}]({res['link']}):\n{res['snippet']}"
-        for res in structured_results])
+    if not structured_results or len(structured_results) == 0:
+        structured_block = "No results found."
+    else:
+        structured_block = "\n\n".join([
+            f"{i+1}. Title: {res.get('title', 'No title')}\n"
+            f"Snippet: {res.get('body', 'No snippet')}\n"
+            f"Link: {res.get('href', 'No link')}"
+            for i, res in enumerate(structured_results)
+        ])
 
-    text_summary = "No results found." if len(text_summary) < 5 else text_summary
-    formatted_links = "No results found." if len(formatted_links) < 5 else formatted_links
+    #text_block = text_summary if text_summary and len(text_summary) > 5 else "No summary available."
 
-    return f"""DuckDuckGo Search Results for: "{query}"
+    return f"""DuckDuckGo Search Results for query: `{query}`
 
-Summary:
-{text_summary}
-
-Top Links:
-{formatted_links}
+Top Search Results:
+{structured_block}
 
 Instructions for the Agent:
-If the summary is insufficient or lacks detail:
-- Use `navigate_browser` to open one or more of the above links.
-- Extract the full page content, including main text, tables, and sidebars.
-- Optionally, explore internal links within those pages if relevant to the query.
-"""
+1. Snippets are only references; never extract or infer answers directly from them..
+2. Use `navigate_browser` to open promising links.
+   - Prioritize links whose titles or snippets closely match the key terms in the question.
+   - Focus on extracting structured information like main content, tables, or lists.
+3. If a page lacks sufficient data, explore internal links within that domain.
+4. Combine information from multiple sources if needed to answer the original question accurately."""
+
 
 search_tool = Tool(
     name="duckduckgo_search",
     func=get_information_from_searches,
     description=(
-        "Use this tool to perform a live DuckDuckGo web search and retrieve both a summary and a list of relevant links "
+        "Use this tool to perform a live DuckDuckGo web search and retrieve a list of relevant links "
         "with snippets. Ideal for finding general information from public websites that are well indexed by DuckDuckGo.\n\n"
         "Limitations:\n"
         "- DuckDuckGo may not return results for sites like Google.\n"
@@ -881,7 +876,6 @@ search_tool = Tool(
     )
 )
 
-# Python interpreter
 def verbose_python_executor(code: str) -> str:
     """Executes Python code and returns both the code and the output."""
     tool = PythonREPLTool()
